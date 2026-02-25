@@ -1,0 +1,51 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  admin
+  member
+}
+
+model User {
+  id            String              @id @db.Uuid
+  role          UserRole
+  createdAt     DateTime            @default(now()) @map("created_at")
+  classes       CommunityClass[]    @relation("AdminClasses")
+  registrations ClassRegistration[] @relation("MemberRegistrations")
+
+  @@map("users")
+}
+
+model CommunityClass {
+  id            String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  createdBy     String              @map("created_by") @db.Uuid
+  title         String
+  description   String
+  instructorName String             @map("instructor_name")
+  location      String
+  startsAt      DateTime            @map("starts_at")
+  capacity      Int
+  createdAt     DateTime            @default(now()) @map("created_at")
+  admin         User                @relation("AdminClasses", fields: [createdBy], references: [id], onDelete: Cascade)
+  registrations ClassRegistration[]
+
+  @@map("community_classes")
+}
+
+model ClassRegistration {
+  id             String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  classId        String         @map("class_id") @db.Uuid
+  memberId       String         @map("member_id") @db.Uuid
+  createdAt      DateTime       @default(now()) @map("created_at")
+  communityClass CommunityClass @relation(fields: [classId], references: [id], onDelete: Cascade)
+  member         User           @relation("MemberRegistrations", fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([classId, memberId])
+  @@map("class_registrations")
+}
