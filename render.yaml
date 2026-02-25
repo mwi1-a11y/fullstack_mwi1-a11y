@@ -12,7 +12,7 @@ services:
         sync: false
       - key: sb_publishable_0OR-uirswdL7VsOs6yOPiQ_qXIZdSG6
         sync: false
-      - key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR3a3dkY2RsYXRuYWFpbHlqbWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwMzUxNTIsImV4cCI6MjA4NzYxMTE1Mn0.xbi5Xxtp8gbhvKG_hRfzsefpqvMdXkNczXmtQjf51Rw
+      - key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR3a3dkY2RsYXRuYWFpbHlqbWdhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MjAzNTE1MiwiZXhwIjoyMDg3NjExMTUyfQ.NPOAgp1MKwpEWzZuzb_X56YGsdcWKRWt2ynr-UW89oQ
         sync: false
       - key: CORS_ORIGINS
         sync: false
