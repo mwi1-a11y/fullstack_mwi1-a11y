@@ -8,11 +8,11 @@ services:
     startCommand: npm --workspace apps/api run start
     healthCheckPath: /health
     envVars:
-      - key: SUPABASE_URL
+      - key: https://twkwdcdlatnaailyjmga.supabase.co
         sync: false
-      - key: SUPABASE_PUBLISHABLE_KEY
+      - key: sb_publishable_0OR-uirswdL7VsOs6yOPiQ_qXIZdSG6
         sync: false
-      - key: SUPABASE_SERVICE_ROLE_KEY
+      - key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR3a3dkY2RsYXRuYWFpbHlqbWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwMzUxNTIsImV4cCI6MjA4NzYxMTE1Mn0.xbi5Xxtp8gbhvKG_hRfzsefpqvMdXkNczXmtQjf51Rw
         sync: false
       - key: CORS_ORIGINS
         sync: false
