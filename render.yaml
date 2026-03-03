@@ -8,7 +8,11 @@ services:
     startCommand: npm --workspace apps/api run start
     healthCheckPath: /health
     envVars:
-      SUPABASE_URL: "https://twkwdcdlatnaailyjmga.supabase.co"
-      SUPABASE_PUBLISHABLE_KEY: "sb_publishable_0OR-uirswdL7VsOs6yOPiQ_qXIZdSG6"
-      SUPABASE_SERVICE_ROLE_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR3a3dkY2RsYWFpbHlqbWdhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MjAzNTE1MiwiZXhwIjoyMDg3NjExMTUyfQ.NPOAgp1MKwpEWzZuzb_X56YGsdcWKRWt2ynr-UW89oQ"
-      CORS_ORIGINS: "http://localhost:5173"
+      - key: SUPABASE_URL
+        value: "https://twkwdcdlatnaailyjmga.supabase.co"
+      - key: SUPABASE_PUBLISHABLE_KEY
+        value: "sb_publishable_0OR-uirswdL7VsOs6yOPiQ_qXIZdSG6"
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR3a3dkY2RsYWFpbHlqbWdhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MjAzNTE1MiwiZXhwIjoyMDg3NjExMTUyfQ.NPOAgp1MKwpEWzZuzb_X56YGsdcWKRWt2ynr-UW89oQ"
+      - key: CORS_ORIGINS
+        value: "http://localhost:5173"
