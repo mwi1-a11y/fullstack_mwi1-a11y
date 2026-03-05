@@ -3,10 +3,13 @@ node_modules/
 
 # output
 dist/
+*.tsbuildinfo
 
 # environment
 .env
 .env.*
+# ignore local API env
+/apps/api/.env
 
 # misc
 .DS_Store

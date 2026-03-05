@@ -28,6 +28,19 @@ const allowedOrigins = corsOriginsRaw
   .split(",")
   .map((origin) => origin.trim().replace(/\/$/, ""))
   .filter(Boolean);
+const isProduction = process.env.NODE_ENV === "production";
+
+function isLocalDevOrigin(origin: string) {
+  try {
+    const parsedOrigin = new URL(origin);
+    return (
+      (parsedOrigin.hostname === "localhost" || parsedOrigin.hostname === "127.0.0.1") &&
+      Boolean(parsedOrigin.port)
+    );
+  } catch {
+    return false;
+  }
+}
 
 if (!supabaseUrl || !supabasePublishableKey || !supabaseServiceRoleKey) {
   throw new Error(
@@ -43,12 +56,16 @@ const app = express();
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
+      const normalizedOrigin = origin?.replace(/\/$/, "") ?? null;
+      const allowDevLocalhost =
+        !isProduction && normalizedOrigin ? isLocalDevOrigin(normalizedOrigin) : false;
+
+      if (!normalizedOrigin || allowedOrigins.includes(normalizedOrigin) || allowDevLocalhost) {
         callback(null, true);
         return;
       }
 
-      callback(new Error(`Origin ${origin} not allowed by CORS`));
+      callback(new Error(`Origin ${normalizedOrigin} not allowed by CORS`));
     }
   })
 );
@@ -77,6 +94,10 @@ const createClassSchema = z.object({
 
 const registerSchema = z.object({
   classId: z.string().uuid()
+});
+
+const groqQuerySchema = z.object({
+  query: z.string().min(1)
 });
 
 const classInsertSchema = z
@@ -447,6 +468,55 @@ app.post("/api/member/registrations", async (request, response) => {
   }
 
   response.status(201).json({ message: "Registration successful." } satisfies AuthResponse);
+});
+
+app.post("/api/groq", async (request, response) => {
+  const user = await requireUser(request, response);
+  if (!user) {
+    return;
+  }
+
+  const parsed = groqQuerySchema.safeParse(request.body);
+  if (!parsed.success) {
+    response.status(400).json({ error: "Invalid GROQ payload" });
+    return;
+  }
+
+  const groqApiUrl = process.env.GROQ_API_URL;
+  const groqApiKey = process.env.GROQ_API_KEY;
+  const groqDefaultModel = process.env.GROQ_DEFAULT_MODEL || "openai/gpt-oss-20b";
+
+  if (!groqApiUrl || !groqApiKey) {
+    response.status(500).json({ error: "GROQ API not configured on server." });
+    return;
+  }
+
+  try {
+    const groqResponse = await fetch(`${groqApiUrl}/responses`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${groqApiKey}`
+      },
+      body: JSON.stringify({
+        model: groqDefaultModel,
+        input: parsed.data.query
+      })
+    });
+
+    const text = await groqResponse.text();
+
+    // Try to forward JSON if possible, otherwise forward text
+    const contentType = groqResponse.headers.get("content-type") ?? "";
+    if (contentType.includes("application/json")) {
+      response.status(groqResponse.status).json(JSON.parse(text));
+      return;
+    }
+
+    response.status(groqResponse.status).type("text/plain").send(text);
+  } catch (err) {
+    response.status(502).json({ error: "Failed to reach GROQ API." });
+  }
 });
 
 app.listen(port, () => {

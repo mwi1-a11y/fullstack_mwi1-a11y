@@ -34,6 +34,62 @@ function apiUrl(path: string) {
   return `${apiBaseUrl}${path}`;
 }
 
+function apiUnreachableMessage(context: string) {
+  return `${context} failed because the API is unreachable at ${apiBaseUrl}. Check that the API is running and that CORS allows this web origin.`;
+}
+
+function extractGroqOutputText(payload: unknown): string | null {
+  if (!payload || typeof payload !== "object") {
+    return null;
+  }
+
+  const record = payload as Record<string, unknown>;
+
+  if (typeof record.output_text === "string" && record.output_text.trim()) {
+    return record.output_text;
+  }
+
+  if (Array.isArray(record.output_text)) {
+    const joined = record.output_text
+      .filter((item): item is string => typeof item === "string")
+      .join("\n")
+      .trim();
+    if (joined) {
+      return joined;
+    }
+  }
+
+  if (!Array.isArray(record.output)) {
+    return null;
+  }
+
+  const chunks: string[] = [];
+
+  for (const outputItem of record.output) {
+    if (!outputItem || typeof outputItem !== "object") {
+      continue;
+    }
+
+    const message = outputItem as Record<string, unknown>;
+    if (!Array.isArray(message.content)) {
+      continue;
+    }
+
+    for (const contentItem of message.content) {
+      if (!contentItem || typeof contentItem !== "object") {
+        continue;
+      }
+      const content = contentItem as Record<string, unknown>;
+      if (content.type === "output_text" && typeof content.text === "string") {
+        chunks.push(content.text);
+      }
+    }
+  }
+
+  const text = chunks.join("\n").trim();
+  return text || null;
+}
+
 async function parseApiJson<T>(response: Response): Promise<T> {
   const contentType = response.headers.get("content-type") ?? "";
 
@@ -77,6 +133,10 @@ export default function App() {
   const [createLoading, setCreateLoading] = useState(false);
 
   const [registeringClassId, setRegisteringClassId] = useState<string | null>(null);
+  const [groqQuery, setGroqQuery] = useState<string>("");
+  const [groqResult, setGroqResult] = useState<string | null>(null);
+  const [groqLoading, setGroqLoading] = useState(false);
+  const [groqError, setGroqError] = useState<string | null>(null);
 
   const dashboardTitle = useMemo(() => {
     if (!currentRole) {
@@ -179,10 +239,14 @@ export default function App() {
       await loadDashboard(data.role, data.accessToken);
     } catch (error) {
       if (error instanceof Error) {
+        if (error.message === "Load failed" || error.message === "Failed to fetch") {
+          setStatus(apiUnreachableMessage("Authentication"));
+          return;
+        }
         setStatus(error.message);
         return;
       }
-      setStatus("Could not reach the backend API.");
+      setStatus(apiUnreachableMessage("Authentication"));
     } finally {
       setAuthLoading(false);
     }
@@ -245,10 +309,14 @@ export default function App() {
       await loadAdminClasses(accessToken);
     } catch (error) {
       if (error instanceof Error) {
+        if (error.message === "Load failed" || error.message === "Failed to fetch") {
+          setStatus(apiUnreachableMessage("Class creation"));
+          return;
+        }
         setStatus(error.message);
         return;
       }
-      setStatus("Could not create class.");
+      setStatus(apiUnreachableMessage("Class creation"));
     } finally {
       setCreateLoading(false);
     }
@@ -283,12 +351,70 @@ export default function App() {
       await loadMemberClasses(accessToken);
     } catch (error) {
       if (error instanceof Error) {
+        if (error.message === "Load failed" || error.message === "Failed to fetch") {
+          setStatus(apiUnreachableMessage("Registration"));
+          return;
+        }
         setStatus(error.message);
         return;
       }
-      setStatus("Could not complete registration.");
+      setStatus(apiUnreachableMessage("Registration"));
     } finally {
       setRegisteringClassId(null);
+    }
+  }
+
+  async function handleGroqSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!accessToken) {
+      setGroqError("You must be logged in to run queries.");
+      return;
+    }
+
+    setGroqLoading(true);
+    setGroqError(null);
+    setGroqResult(null);
+
+    try {
+      const response = await fetch(apiUrl("/api/groq"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`
+        },
+        body: JSON.stringify({ query: groqQuery })
+      });
+
+      const contentType = response.headers.get("content-type") ?? "";
+      if (contentType.includes("application/json")) {
+        const data = await response.json();
+        if (!response.ok) {
+          setGroqError(data.error ?? "GROQ query failed.");
+        } else {
+          const outputText = extractGroqOutputText(data);
+          if (!outputText) {
+            setGroqError("GROQ response did not include model text output.");
+            return;
+          }
+          setGroqResult(outputText);
+        }
+      } else {
+        const text = await response.text();
+        if (!response.ok) {
+          setGroqError(text || "GROQ query failed.");
+        } else {
+          setGroqResult(text);
+        }
+      }
+    } catch (err) {
+      if (err instanceof Error) {
+        setGroqError(err.message);
+      } else {
+        setGroqError("Could not reach GROQ endpoint.");
+      }
+    } finally {
+      setGroqLoading(false);
     }
   }
 
@@ -484,6 +610,28 @@ export default function App() {
                   );
                 })}
               </ul>
+            )}
+          </section>
+        )}
+
+        {accessToken && (
+          <section className="stack">
+            <h2>Ask with GROQ</h2>
+            <form onSubmit={handleGroqSubmit} className="stack">
+              <textarea
+                placeholder="Enter GROQ query"
+                value={groqQuery}
+                onChange={(e) => setGroqQuery(e.target.value)}
+                rows={6}
+                required
+              />
+              <button type="submit" disabled={groqLoading}>
+                {groqLoading ? "Running..." : "Run Query"}
+              </button>
+            </form>
+            {groqError && <p className="status">{groqError}</p>}
+            {groqResult && (
+              <pre className="groq-result" style={{ whiteSpace: "pre-wrap" }}>{groqResult}</pre>
             )}
           </section>
         )}
