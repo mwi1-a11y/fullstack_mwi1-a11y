@@ -1,6 +1,28 @@
 # Community Classes Full-Stack App
 
-This repository is a full-stack starter for a community classes website.
+This repository contains a full-stack community classes app in a small monorepo. It includes:
+
+- A React 19 + Vite frontend in `apps/web`
+- An Express + TypeScript API in `apps/api`
+- Supabase Auth for signup/login and token-based sessions
+- Supabase Postgres tables, RLS policies, and seed class data
+- Role-based access for `admin` and `member` users
+- Admin class creation tools
+- Member class browsing and class registration
+- Capacity checks and duplicate-registration protection
+- A protected `/api/groq` proxy endpoint plus a basic AI query UI
+- Local dev scripts plus deployment config for Render and Vercel
+
+At a glance, the project is organized like this:
+
+- `apps/web`: single-page React app for auth, dashboards, class creation, registration, and AI queries
+- `apps/api`: Express API for auth, role enforcement, classes, registrations, and GROQ proxying
+- `apps/api/supabase/schema.sql`: database schema, row-level-security policies, and starter class seeds
+- `apps/api/prisma/schema.prisma`: schema mirror/reference
+- `render.yaml`: Render backend deployment config
+- `apps/web/vercel.json`: Vercel frontend deployment config
+
+This is no longer just a starter shell; it already has the main user flows wired together end to end.
 
 Stack:
 - Frontend: React + Vite (`apps/web`)
